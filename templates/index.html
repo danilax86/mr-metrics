@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Merged requests</title>
+</head>
+<body>
+<h1>Merged requests by developer and repo</h1>
+<table>
+    <tr>
+        <th style="text-align: left;padding-left: 0">Developer</th>
+        {{range .Projects}}
+        <th style="padding-right: 1.5em">{{.}}</th>
+        {{end}}
+    </tr>
+    {{range $dev, $counts := .Developers}}
+    <tr>
+        <td style="padding-right: 1.5em; ">{{$dev}}</td>
+        {{range $project := $.Projects}}
+        <td>{{index $counts $project}}</td>
+        {{end}}
+    </tr>
+    {{end}}
+</table>
+</body>
+</html>
