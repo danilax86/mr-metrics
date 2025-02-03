@@ -1,17 +1,42 @@
-package main
+package db
 
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/lib/pq"
+	"mr-metrics/internal/model"
 	"sort"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
-func getLastUpdated(projectID int) (time.Time, error) {
+type PostgresStore struct {
+	db *sql.DB
+}
+
+func NewPostgresStore(connStr string) (*PostgresStore, error) {
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return &PostgresStore{db: db}, nil
+}
+
+func (p PostgresStore) GetLastUpdated(projectID int) (time.Time, error) {
 	var lastUpdated time.Time
-	err := db.QueryRow(
+	err := p.db.QueryRow(
 		"SELECT last_updated FROM projects WHERE projects.project_id = $1",
 		projectID,
 	).Scan(&lastUpdated)
@@ -22,8 +47,21 @@ func getLastUpdated(projectID int) (time.Time, error) {
 	return lastUpdated, err
 }
 
-func updateProjectCache(projectID int, projectName string, counts map[string]int) error {
-	tx, err := db.Begin()
+func (p PostgresStore) GetLastUpdatedByName(projectName string) (time.Time, error) {
+	var lastUpdated time.Time
+	err := p.db.QueryRow(
+		"SELECT last_updated FROM projects WHERE projects.project_name = $1",
+		projectName,
+	).Scan(&lastUpdated)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return time.Time{}, nil
+	}
+	return lastUpdated, err
+}
+
+func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, counts map[string]int) error {
+	tx, err := p.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -75,17 +113,12 @@ func updateProjectCache(projectID int, projectName string, counts map[string]int
 	return tx.Commit()
 }
 
-func getAggregatedData() (interface{}, error) {
-	type ViewData struct {
-		Developers map[string]map[string]int `json:"developers"`
-		Projects   []string                  `json:"projects"`
-	}
-
+func (p PostgresStore) GetAggregatedData(projectNames []string) (*model.AggregatedStats, error) {
 	projectNameWithoutGroup := func(projectName string) string {
 		return strings.Split(projectName, "/")[1]
 	}
 
-	rows, err := db.Query(`
+	rows, err := p.db.Query(`
 		WITH project_list AS (
 			SELECT project_id, project_name 
 			FROM projects 
@@ -98,14 +131,13 @@ func getAggregatedData() (interface{}, error) {
 		FROM merged_mrs m
 		JOIN project_list p USING (project_id)
 		GROUP BY 1, 2
-	`, pq.Array(config.Projects))
+	`, pq.Array(projectNames))
 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Map to store results
 	developerStats := make(map[string]map[string]int)
 	projectsSet := make(map[string]struct{})
 
@@ -123,14 +155,13 @@ func getAggregatedData() (interface{}, error) {
 		projectsSet[projectNameWithoutGroup(projectName)] = struct{}{}
 	}
 
-	// Convert projects set to sorted slice
 	projects := make([]string, 0, len(projectsSet))
 	for project := range projectsSet {
 		projects = append(projects, project)
 	}
 	sort.Strings(projects)
 
-	return ViewData{
+	return &model.AggregatedStats{
 		Developers: developerStats,
 		Projects:   projects,
 	}, nil
