@@ -9,6 +9,8 @@ Logic:
 - [ ] Make issuing GitLab requests via cron, not by "/" endpoint
 - [ ] When requesting "/" endpoint, get data directly from database without making requests to GitLab
 - [ ] Write script for applying migrations
+- [ ] Add support of getting statistic for provided date
+- [ ] Add support of getting statistic's diff between provided dates
 
 For contributors:
 
