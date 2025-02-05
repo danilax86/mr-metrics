@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"log"
 	"mr-metrics/internal/api"
 	"mr-metrics/internal/config"
 	"mr-metrics/internal/db"
 	"mr-metrics/internal/handler"
+	"mr-metrics/internal/service/updater"
 )
 
 func main() {
+	ctx := context.Background()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -23,6 +27,8 @@ func main() {
 
 	h := handler.New(store, cfg, gitlabClient)
 
-	log.Printf("Server starting on :%s", cfg.Port)
+	u := updater.New(store, gitlabClient, cfg)
+	go u.Start(ctx)
+
 	log.Fatal(h.Start(cfg.Port))
 }
