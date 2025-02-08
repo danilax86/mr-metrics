@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	"mr-metrics/internal/model"
@@ -32,32 +31,6 @@ func NewPostgresStore(connStr string) (*PostgresStore, error) {
 	}
 
 	return &PostgresStore{db: db}, nil
-}
-
-func (p PostgresStore) GetLastUpdated(projectID int) (time.Time, error) {
-	var lastUpdated time.Time
-	err := p.db.QueryRow(
-		"SELECT last_updated FROM projects WHERE projects.project_id = $1",
-		projectID,
-	).Scan(&lastUpdated)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return time.Time{}, nil
-	}
-	return lastUpdated, err
-}
-
-func (p PostgresStore) GetLastUpdatedByName(projectName string) (time.Time, error) {
-	var lastUpdated time.Time
-	err := p.db.QueryRow(
-		"SELECT last_updated FROM projects WHERE projects.project_name = $1",
-		projectName,
-	).Scan(&lastUpdated)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return time.Time{}, nil
-	}
-	return lastUpdated, err
 }
 
 func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, counts map[string]int) error {
