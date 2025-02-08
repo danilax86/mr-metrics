@@ -9,21 +9,18 @@ import (
 	"time"
 )
 
-type Store interface {
-	GetLastUpdated(projectID int) (time.Time, error)
-	GetLastUpdatedByName(projectName string) (time.Time, error)
-	UpdateProjectCache(projectID int, projectName string, counts map[string]int) error
+type StatsStore interface {
 	GetAggregatedData(projectNames []string) (*model.AggregatedStats, error)
 	GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error)
 }
 type StatsHandler struct {
-	store  Store
+	store  StatsStore
 	cfg    *config.Config
 	client *api.GitLabClient
 	tmpl   *template.Template
 }
 
-func New(store Store, cfg *config.Config, client *api.GitLabClient) *StatsHandler {
+func New(store StatsStore, cfg *config.Config, client *api.GitLabClient) *StatsHandler {
 	return &StatsHandler{
 		store:  store,
 		cfg:    cfg,

@@ -3,26 +3,29 @@ package updater
 import (
 	"context"
 	"log"
-	"mr-metrics/internal/handler"
 	"time"
 
 	"mr-metrics/internal/api"
 	"mr-metrics/internal/config"
 )
 
-type BackgroundUpdater struct {
-	cfg    *config.Config
-	store  handler.Store
-	ticker *time.Ticker
-	gitlab *api.GitLabClient
+type StatsUpdater interface {
+	UpdateProjectCache(projectID int, projectName string, counts map[string]int) error
 }
 
-func New(store handler.Store, gitlab *api.GitLabClient, cfg *config.Config) *BackgroundUpdater {
+type BackgroundUpdater struct {
+	cfg     *config.Config
+	updater StatsUpdater
+	ticker  *time.Ticker
+	gitlab  *api.GitLabClient
+}
+
+func New(store StatsUpdater, gitlab *api.GitLabClient, cfg *config.Config) *BackgroundUpdater {
 	return &BackgroundUpdater{
-		cfg:    cfg,
-		store:  store,
-		gitlab: gitlab,
-		ticker: time.NewTicker(cfg.CacheTTL),
+		cfg:     cfg,
+		updater: store,
+		gitlab:  gitlab,
+		ticker:  time.NewTicker(cfg.CacheTTL),
 	}
 }
 
@@ -50,7 +53,7 @@ func (u *BackgroundUpdater) updateAllProjects() {
 			continue
 		}
 
-		if err := u.store.UpdateProjectCache(projectID, projectName, counts); err != nil {
+		if err := u.updater.UpdateProjectCache(projectID, projectName, counts); err != nil {
 			log.Printf("Failed to update cache for project %s: %v", projectName, err)
 		}
 	}
