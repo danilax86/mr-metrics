@@ -35,7 +35,7 @@ func New(store Store, cfg *config.Config, client *api.GitLabClient) *StatsHandle
 func (h *StatsHandler) Start(port string) error {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", h.handleStatsByDate)
+	mux.HandleFunc("GET /", h.handleStatsByDate)
 	return http.ListenAndServe(":"+port, mux)
 }
 
