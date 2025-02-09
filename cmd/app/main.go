@@ -10,6 +10,8 @@ import (
 	"mr-metrics/internal/db"
 	"mr-metrics/internal/handler"
 	"mr-metrics/internal/service/updater"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {

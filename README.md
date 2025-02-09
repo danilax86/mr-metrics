@@ -29,9 +29,5 @@ For contributors:
 For code quality:
 
 - [ ] Setup linters
-- [ ] Add basic GitHub actions for CI/CD (only in pull requests)
-    - [x] Build
-    - [x] Test
-    - [ ] Lint
 - [ ] Bot, that advices to bump versions of dependencies
 - [ ] Disable merging by people, only by bot that applies checks before merging just in time

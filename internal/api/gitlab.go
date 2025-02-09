@@ -37,21 +37,21 @@ func NewGitLabClient(cfg *config.Config) *GitLabClient {
 	}
 }
 
-// GetMergedMRCounts returns merged MR counts per user for a project
+// GetMergedMRCounts returns merged MR counts per user for a project.
 func (g *GitLabClient) GetMergedMRCounts(projectName string) (map[string]int, int, error) {
 	counts := make(map[string]int)
 	page := 1
-	projectID := 0
+	var projectID int
 
 	for {
 		endpointURL := fmt.Sprintf("%s/projects/%s/merge_requests?state=merged&page=%d&per_page=100",
 			g.baseURL, pathEscape(projectName), page)
 
-		req, err := http.NewRequest("GET", endpointURL, nil)
+		req, err := http.NewRequest(http.MethodGet, endpointURL, nil)
 		if err != nil {
 			return nil, 0, fmt.Errorf("create request failed: %w", err)
 		}
-		req.Header.Add("PRIVATE-TOKEN", g.token)
+		req.Header.Add("Private-Token", g.token)
 
 		resp, err := g.client.Do(req)
 		if err != nil {

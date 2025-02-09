@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const defaultServerTimeout = 3 * time.Second
+
 type StatsStore interface {
 	GetAggregatedData(projectNames []string) (*model.AggregatedStats, error)
 	GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error)
@@ -33,7 +35,14 @@ func (h *StatsHandler) Start(port string) error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /", h.handleStatsByDate)
-	return http.ListenAndServe(":"+port, mux)
+
+	server := http.Server{
+		Addr:              ":" + port,
+		ReadHeaderTimeout: defaultServerTimeout,
+		Handler:           mux,
+	}
+
+	return server.ListenAndServe()
 }
 
 func (h *StatsHandler) handleStats(w http.ResponseWriter, _ *http.Request) {

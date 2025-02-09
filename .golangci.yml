@@ -1,0 +1,132 @@
+linters:
+  disable-all: true
+  # Enable specific linter
+  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - cyclop
+    - decorder
+    #    - depguard @todo #6 turn on depguard linter
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    #    - err113   @todo #8 turn on err113 linter
+    #    - errcheck @todo #7 turn on errcheck linter
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    #    - exhaustruct
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    #    - gci
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gochecksumtype
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - gofmt
+    #    - gofumpt
+    - goheader
+    #    - goimports
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - gosmopolitan
+    - govet
+    - grouper
+    - iface
+    - importas
+    - inamedparam
+    - ineffassign
+    - interfacebloat
+    - intrange
+    - ireturn
+    #    - lll @todo #4 turn on lll linter
+    - loggercheck
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    #    - nlreturn
+    #    - noctx @todo #3 turn on noctx linter
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    #    - rowserrcheck @todo #5 turn on rowserrcheck linter
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tagalign
+    #    - tagliatelle
+    - tenv
+    - testableexamples
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    #    - varnamelen
+    - wastedassign
+    - whitespace
+    #    - wrapcheck @todo #2 turn on wrapcheck linter
+    #    - wsl
+    - zerologlint
+  # Enable presets.
+  # https://golangci-lint.run/usage/linters
+  # Default: []
+  #  presets:
+  #    - bugs
+  #    - comment
+  #    - complexity
+  #    - error
+  #    - format
+  #    - import
+  #    - metalinter
+  #    - module
+  #    - performance
+  #    - sql
+  #    - style
+  #    - test
+  #    - unused
+  # Enable only fast linters from enabled linters set (first run won't be fast)
+  # Default: false
+  fast: false
