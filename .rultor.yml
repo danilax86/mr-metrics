@@ -1,6 +1,9 @@
 architect:
   - danilax86
 
+docker:
+  image: golang:1.23-alpine
+
 merge:
   script:
     - go build -v ./...
