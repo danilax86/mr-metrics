@@ -1,3 +1,5 @@
+// @todo #1 Add license for each file
+
 package main
 
 import (
