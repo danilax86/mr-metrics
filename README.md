@@ -1,3 +1,6 @@
+[![PDD status](https://www.0pdd.com/svg?name=danilax86/mr-metrics)](https://www.0pdd.com/p?name=danilax86/mr-metrics)
+[![Hits-of-Code](https://hitsofcode.com/github/danilax86/mr-metrics?branch=main)](https://hitsofcode.com/github/danilax86/mr-metrics/view?branch=main)
+
 # GitLab merged requests metrics table
 
 A simple web application that shows a [developer × repository] table of merged MRs.
