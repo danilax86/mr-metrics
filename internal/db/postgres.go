@@ -40,7 +40,6 @@ func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, cou
 	}
 	defer tx.Rollback()
 
-	// Update project metadata
 	_, err = tx.Exec(`
 		INSERT INTO projects(project_id, project_name, last_updated) 
 		VALUES($1, $2, NOW())
@@ -52,7 +51,6 @@ func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, cou
 		return fmt.Errorf("failed to update project: %w", err)
 	}
 
-	// Batch insert new metrics
 	stmt, err := tx.Prepare(pq.CopyIn("merged_mrs", "username", "project_id", "merge_count"))
 	if err != nil {
 		return fmt.Errorf("failed to prepare batch insert: %w", err)
