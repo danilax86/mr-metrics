@@ -1,0 +1,7 @@
+architect:
+  - danilax86
+
+merge:
+  script:
+    - go build -v ./...
+    - go test -v ./...
