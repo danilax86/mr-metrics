@@ -8,8 +8,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+)
 
-	_ "github.com/lib/pq"
+const (
+	maxConns        = 25
+	maxConnLifetime = 5 * time.Minute
 )
 
 type PostgresStore struct {
@@ -22,9 +25,9 @@ func NewPostgresStore(connStr string) (*PostgresStore, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetMaxOpenConns(maxConns)
+	db.SetMaxIdleConns(maxConns)
+	db.SetConnMaxLifetime(maxConnLifetime)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
@@ -58,6 +61,8 @@ func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, cou
 		return fmt.Errorf("failed to prepare batch insert: %w", err)
 	}
 
+	defer stmt.Close()
+
 	for username, count := range counts {
 		_, err = stmt.Exec(username, projectID, count)
 		if err != nil {
@@ -68,10 +73,6 @@ func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, cou
 	_, err = stmt.Exec()
 	if err != nil {
 		return fmt.Errorf("failed to execute batch insert: %w", err)
-	}
-
-	if err = stmt.Close(); err != nil {
-		return fmt.Errorf("failed to close statement: %w", err)
 	}
 
 	return tx.Commit()
