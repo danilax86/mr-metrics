@@ -2,7 +2,7 @@ architect:
   - danilax86
 
 docker:
-  image: golang:1.23-alpine
+  image: yegor256/rultor
 
 merge:
   script:
