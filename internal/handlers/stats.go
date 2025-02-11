@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-const defaultServerTimeout = 3 * time.Second
-
 type StatsStore interface {
 	GetAggregatedData(projectNames []string) (*model.AggregatedStats, error)
 	GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error)

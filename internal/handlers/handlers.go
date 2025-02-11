@@ -5,7 +5,10 @@ import (
 	"mr-metrics/internal/config"
 	"mr-metrics/internal/db"
 	"net/http"
+	"time"
 )
+
+const defaultServerTimeout = 3 * time.Second
 
 func Start(db *db.PostgresStore, cfg *config.Config, client *api.GitLabClient) error {
 	mux := http.NewServeMux()
