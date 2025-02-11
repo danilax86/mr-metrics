@@ -1,0 +1,23 @@
+{{define "body"}}
+    <h1>Merged requests
+        {{ if .DateString }}
+            up to {{ .DateString }}
+        {{ end }}
+    </h1>
+    <table>
+        <tr>
+            <th id="dev-th">Developer</th>
+            {{range .Projects}}
+                <th class="project-th">{{.}}</th>
+            {{end}}
+        </tr>
+        {{range $dev, $counts := .Developers}}
+            <tr>
+                <td class="dev-td">{{$dev}}</td>
+                {{range $project := $.Projects}}
+                    <td>{{index $counts $project}}</td>
+                {{end}}
+            </tr>
+        {{end}}
+    </table>
+{{end}}
