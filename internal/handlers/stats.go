@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"html/template"
 	"mr-metrics/internal/config"
 	"mr-metrics/internal/model"
+	"mr-metrics/internal/web"
 	"net/http"
 	"time"
 )
@@ -28,7 +30,7 @@ func NewStatsHandler(store StatsStore, cfg *config.Config, client StatsClient) *
 		store:  store,
 		cfg:    cfg,
 		client: client,
-		tmpl:   template.Must(template.ParseFiles("internal/web/templates/index.html")),
+		tmpl:   web.TemplateStats(),
 	}
 }
 
@@ -39,8 +41,8 @@ func (h *StatsHandler) handleStats(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	if err := h.tmpl.Execute(w, data); err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
+	if err := web.TemplateExec(w, h.tmpl, data); err != nil {
+		http.Error(w, fmt.Errorf("template error: %w", err).Error(), http.StatusInternalServerError)
 	}
 }
 
