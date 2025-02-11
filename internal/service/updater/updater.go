@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"mr-metrics/internal/api"
 	"mr-metrics/internal/config"
 )
 
@@ -13,21 +12,23 @@ type StatsUpdater interface {
 	UpdateProjectCache(projectID int, projectName string, counts map[string]int) error
 }
 
+type StatsClient interface {
+	GetMergedMRCounts(projectName string) (map[string]int, int, error)
+}
+
 type BackgroundUpdater struct {
 	cfg     *config.Config
 	updater StatsUpdater
 	ticker  *time.Ticker
-	gitlab  *api.GitLabClient
+	gitlab  StatsClient
 }
 
-func New(store StatsUpdater, gitlab *api.GitLabClient, cfg *config.Config) *BackgroundUpdater {
+func New(store StatsUpdater, gitlab StatsClient, cfg *config.Config) *BackgroundUpdater {
 	return &BackgroundUpdater{
 		cfg:     cfg,
 		updater: store,
-		// @todo #26 isolate gitlab client with some interface only for GetMergedMRCounts function,
-		// it is not needed for now, but it is a better approach to do so and must be done in future anyway.
-		gitlab: gitlab,
-		ticker: time.NewTicker(cfg.CacheTTL),
+		gitlab:  gitlab,
+		ticker:  time.NewTicker(cfg.CacheTTL),
 	}
 }
 
