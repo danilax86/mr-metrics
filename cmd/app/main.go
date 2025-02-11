@@ -8,7 +8,7 @@ import (
 	"mr-metrics/internal/api"
 	"mr-metrics/internal/config"
 	"mr-metrics/internal/db"
-	"mr-metrics/internal/handler"
+	"mr-metrics/internal/handlers"
 	"mr-metrics/internal/service/updater"
 
 	_ "github.com/lib/pq"
@@ -29,10 +29,8 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	h := handler.New(store, cfg, gitlabClient)
-
 	u := updater.New(store, gitlabClient, cfg)
 	go u.Start(ctx)
 
-	log.Fatal(h.Start(cfg.Port))
+	log.Fatal(handlers.Start(store, cfg, gitlabClient))
 }

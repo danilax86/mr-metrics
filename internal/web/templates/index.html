@@ -2,23 +2,24 @@
 <html lang="en">
 <head>
     <title>Merged requests</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <h1>Merged requests
-{{ if .DateString }}
+    {{ if .DateString }}
     up to {{ .DateString }}
-{{ end }}
+    {{ end }}
 </h1>
 <table>
     <tr>
-        <th style="text-align: left;padding-left: 0">Developer</th>
+        <th id="dev-th">Developer</th>
         {{range .Projects}}
-        <th style="padding-right: 1.5em">{{.}}</th>
+        <th class="project-th">{{.}}</th>
         {{end}}
     </tr>
     {{range $dev, $counts := .Developers}}
     <tr>
-        <td style="padding-right: 1.5em; ">{{$dev}}</td>
+        <td class="dev-td">{{$dev}}</td>
         {{range $project := $.Projects}}
         <td>{{index $counts $project}}</td>
         {{end}}

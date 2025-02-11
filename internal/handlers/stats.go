@@ -1,48 +1,35 @@
-package handler
+package handlers
 
 import (
 	"html/template"
-	"mr-metrics/internal/api"
 	"mr-metrics/internal/config"
 	"mr-metrics/internal/model"
 	"net/http"
 	"time"
 )
 
-const defaultServerTimeout = 3 * time.Second
-
 type StatsStore interface {
 	GetAggregatedData(projectNames []string) (*model.AggregatedStats, error)
 	GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error)
 }
+
+type StatsClient interface {
+	GetMergedMRCounts(projectName string) (map[string]int, int, error)
+}
 type StatsHandler struct {
 	store  StatsStore
+	client StatsClient
 	cfg    *config.Config
-	client *api.GitLabClient
 	tmpl   *template.Template
 }
 
-func New(store StatsStore, cfg *config.Config, client *api.GitLabClient) *StatsHandler {
+func NewStatsHandler(store StatsStore, cfg *config.Config, client StatsClient) *StatsHandler {
 	return &StatsHandler{
 		store:  store,
 		cfg:    cfg,
 		client: client,
 		tmpl:   template.Must(template.ParseFiles("internal/web/templates/index.html")),
 	}
-}
-
-func (h *StatsHandler) Start(port string) error {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /", h.handleStatsByDate)
-
-	server := http.Server{
-		Addr:              ":" + port,
-		ReadHeaderTimeout: defaultServerTimeout,
-		Handler:           mux,
-	}
-
-	return server.ListenAndServe()
 }
 
 func (h *StatsHandler) handleStats(w http.ResponseWriter, _ *http.Request) {
