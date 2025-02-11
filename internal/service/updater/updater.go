@@ -24,7 +24,7 @@ func New(store StatsUpdater, gitlab *api.GitLabClient, cfg *config.Config) *Back
 	return &BackgroundUpdater{
 		cfg:     cfg,
 		updater: store,
-		// @todo #19 isolate gitlab client with some interface only for GetMergedMRCounts function,
+		// @todo #26 isolate gitlab client with some interface only for GetMergedMRCounts function,
 		// it is not needed for now, but it is a better approach to do so and must be done in future anyway.
 		gitlab: gitlab,
 		ticker: time.NewTicker(cfg.CacheTTL),
