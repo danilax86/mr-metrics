@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mr-metrics/internal/config"
+	"mr-metrics/internal/model"
 	"net/http"
 	"net/url"
 	"strings"
@@ -24,7 +25,8 @@ type ProjectMRResponse struct {
 	Author struct {
 		Username string `json:"username"`
 	} `json:"author"`
-	ProjectID int `json:"project_id"`
+	ProjectID int        `json:"project_id"`
+	MergedAt  *time.Time `json:"merged_at"`
 }
 
 func NewGitLabClient(cfg *config.Config) *GitLabClient {
@@ -38,8 +40,8 @@ func NewGitLabClient(cfg *config.Config) *GitLabClient {
 }
 
 // GetMergedMRCounts returns merged MR counts per user for a project.
-func (g *GitLabClient) GetMergedMRCounts(projectName string) (map[string]int, int, error) {
-	counts := make(map[string]int)
+func (g *GitLabClient) GetMergedMRCounts(projectName string) ([]model.MergeRequest, int, error) {
+	var mrs []model.MergeRequest
 	page := 1
 	var projectID int
 
@@ -63,19 +65,23 @@ func (g *GitLabClient) GetMergedMRCounts(projectName string) (map[string]int, in
 			return nil, 0, fmt.Errorf("API returned %d", resp.StatusCode)
 		}
 
-		var mrs []ProjectMRResponse
-		if err := json.NewDecoder(resp.Body).Decode(&mrs); err != nil {
+		var apiMRs []ProjectMRResponse
+		if err := json.NewDecoder(resp.Body).Decode(&apiMRs); err != nil {
 			resp.Body.Close()
 			return nil, 0, fmt.Errorf("decode failed: %w", err)
 		}
 		resp.Body.Close()
 
-		projectID = mrs[0].ProjectID
+		projectID = apiMRs[0].ProjectID
 
-		for _, mr := range mrs {
-			if mr.Author.Username != "" {
-				counts[mr.Author.Username]++
+		for _, mr := range apiMRs {
+			if mr.Author.Username == "" || mr.MergedAt == nil {
+				continue
 			}
+			mrs = append(mrs, model.MergeRequest{
+				Username: mr.Author.Username,
+				MergedAt: *mr.MergedAt,
+			})
 		}
 
 		if resp.Header.Get("X-Next-Page") == "" {
@@ -84,7 +90,7 @@ func (g *GitLabClient) GetMergedMRCounts(projectName string) (map[string]int, in
 		page++
 	}
 
-	return counts, projectID, nil
+	return mrs, projectID, nil
 }
 
 func pathEscape(s string) string {
