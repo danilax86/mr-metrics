@@ -11,12 +11,11 @@ import (
 )
 
 type StatsStore interface {
-	GetAggregatedData(projectNames []string) (*model.AggregatedStats, error)
 	GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error)
 }
 
 type StatsClient interface {
-	GetMergedMRCounts(projectName string) (map[string]int, int, error)
+	GetMergedMRCounts(projectName string) ([]model.MergeRequest, int, error)
 }
 type StatsHandler struct {
 	store  StatsStore
@@ -35,7 +34,19 @@ func NewStatsHandler(store StatsStore, cfg *config.Config, client StatsClient) *
 }
 
 func (h *StatsHandler) handleStats(w http.ResponseWriter, _ *http.Request) {
-	data, err := h.store.GetAggregatedData(h.cfg.ProjectNames)
+	today := time.Now().UTC()
+	endOfDay := time.Date(
+		time.Now().Year(),
+		today.Month(),
+		today.Day(),
+		23,
+		59,
+		59,
+		999999999,
+		today.Location(),
+	).UTC()
+
+	data, err := h.store.GetAggregatedDataForDate(h.cfg.ProjectNames, endOfDay)
 	if err != nil {
 		http.Error(w, "Failed to get data", http.StatusInternalServerError)
 		return

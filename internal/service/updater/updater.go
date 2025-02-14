@@ -3,17 +3,18 @@ package updater
 import (
 	"context"
 	"log"
+	"mr-metrics/internal/model"
 	"time"
 
 	"mr-metrics/internal/config"
 )
 
 type StatsUpdater interface {
-	UpdateProjectCache(projectID int, projectName string, counts map[string]int) error
+	UpdateProjectCache(projectID int, projectName string, counts []model.MergeRequest) error
 }
 
 type StatsClient interface {
-	GetMergedMRCounts(projectName string) (map[string]int, int, error)
+	GetMergedMRCounts(projectName string) ([]model.MergeRequest, int, error)
 }
 
 type BackgroundUpdater struct {

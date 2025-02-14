@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	"mr-metrics/internal/model"
@@ -14,6 +15,8 @@ const (
 	maxConns        = 25
 	maxConnLifetime = 5 * time.Minute
 )
+
+const oneDay = 24 * time.Hour
 
 type PostgresStore struct {
 	db *sql.DB
@@ -36,14 +39,13 @@ func NewPostgresStore(connStr string) (*PostgresStore, error) {
 	return &PostgresStore{db: db}, nil
 }
 
-func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, counts map[string]int) error {
+func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, mrs []model.MergeRequest) error {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	// Update project metadata
 	_, err = tx.Exec(`
 		INSERT INTO projects(project_id, project_name, last_updated) 
 		VALUES($1, $2, NOW())
@@ -55,100 +57,34 @@ func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, cou
 		return fmt.Errorf("failed to update project: %w", err)
 	}
 
-	// Batch insert new metrics
-	stmt, err := tx.Prepare(pq.CopyIn("merged_mrs", "username", "project_id", "merge_count"))
-	if err != nil {
-		return fmt.Errorf("failed to prepare batch insert: %w", err)
-	}
+	userDates := groupMRsByUserAndDate(mrs)
 
-	defer stmt.Close()
-
-	for username, count := range counts {
-		_, err = stmt.Exec(username, projectID, count)
-		if err != nil {
-			return fmt.Errorf("failed to add row to batch: %w", err)
-		}
-	}
-
-	_, err = stmt.Exec()
-	if err != nil {
-		return fmt.Errorf("failed to execute batch insert: %w", err)
+	if err := updateDailyCumulativeCounts(tx, userDates, projectID); err != nil {
+		return fmt.Errorf("failed to update daily cumulative counts: %w", err)
 	}
 
 	return tx.Commit()
 }
 
-func (p PostgresStore) GetAggregatedData(projectNames []string) (*model.AggregatedStats, error) {
-	rows, err := p.db.Query(`
-		SELECT DISTINCT ON (m.username, p.project_id)
-			m.username,
-			p.project_name,
-			m.merge_count
-		FROM merged_mrs m
-		JOIN projects p ON m.project_id = p.project_id
-		WHERE p.project_name = ANY($1)
-		ORDER BY m.username, p.project_id, m.created_at DESC
-	`, pq.Array(projectNames))
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	developerStats := make(map[string]map[string]int)
-	projectsSet := make(map[string]struct{})
-
-	for rows.Next() {
-		var username, projectName string
-		var count int
-		if err := rows.Scan(&username, &projectName, &count); err != nil {
-			return nil, err
-		}
-
-		if _, exists := developerStats[username]; !exists {
-			developerStats[username] = make(map[string]int)
-		}
-
-		projectName = extractProjectName(projectName)
-
-		developerStats[username][projectName] = count
-		projectsSet[projectName] = struct{}{}
-	}
-
-	projects := sortedKeys(projectsSet)
-
-	return &model.AggregatedStats{
-		Developers: developerStats,
-		Projects:   projects,
-	}, nil
-}
-
 func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error) {
-	query := `
-			WITH latest_data AS (
-				SELECT DISTINCT ON (m.username, p.project_id)
-					m.username,
-					p.project_name,
-					m.merge_count,
-					m.created_at
-				FROM merged_mrs m
-				JOIN projects p ON m.project_id = p.project_id
-				WHERE p.project_name = ANY($1)
-				AND m.created_at <= $2
-				ORDER BY m.username, p.project_id, m.created_at DESC
-			)
-			SELECT 
-				username,
-				project_name,
-				merge_count as merge_count
-			FROM latest_data
-		`
-
-	rows, err := p.db.Query(
-		query,
-		pq.Array(projectNames),
-		targetDate.UTC(),
-	)
+	rows, err := p.db.Query(`
+        WITH latest_data AS (
+            SELECT DISTINCT ON (m.username, p.project_id)
+                m.username,
+                p.project_name,
+                m.merge_count
+            FROM merged_mrs m
+            JOIN projects p ON m.project_id = p.project_id
+            WHERE p.project_name = ANY($1)
+            AND m.merged_at <= $2
+            ORDER BY m.username, p.project_id, m.merged_at DESC
+        )
+        SELECT 
+            username,
+            project_name,
+            merge_count
+        FROM latest_data
+    `, pq.Array(projectNames), targetDate)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -201,4 +137,66 @@ func sortedKeys(m map[string]struct{}) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func groupMRsByUserAndDate(mrs []model.MergeRequest) map[string]map[time.Time]int {
+	userDates := make(map[string]map[time.Time]int)
+	for _, mr := range mrs {
+		date := mr.MergedAt.UTC().Truncate(oneDay)
+		if _, exists := userDates[mr.Username]; !exists {
+			userDates[mr.Username] = make(map[time.Time]int)
+		}
+		userDates[mr.Username][date]++
+	}
+	return userDates
+}
+
+func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]int, projectID int) error {
+	for username, dates := range userDates {
+		var sortedDates []time.Time
+		for date := range dates {
+			sortedDates = append(sortedDates, date)
+		}
+		sort.Slice(sortedDates, func(i, j int) bool {
+			return sortedDates[i].Before(sortedDates[j])
+		})
+
+		cumulative := 0
+		for _, date := range sortedDates {
+			cumulative += dates[date]
+
+			// Check if a row already exists for the given date
+			var existingCount int
+			err := tx.QueryRow(`
+				SELECT merge_count
+				FROM merged_mrs
+				WHERE username = $1 AND project_id = $2 AND merged_at = $3
+			`, username, projectID, date).Scan(&existingCount)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("failed to check existing row: %w", err)
+			}
+
+			// If a row exists, update the merge_count
+			if existingCount > 0 {
+				_, err = tx.Exec(`
+					UPDATE merged_mrs
+					SET merge_count = $1
+					WHERE username = $2 AND project_id = $3 AND merged_at = $4
+				`, cumulative, username, projectID, date)
+				if err != nil {
+					return fmt.Errorf("failed to update existing row: %w", err)
+				}
+			} else {
+				// If no row exists, insert a new one
+				_, err = tx.Exec(`
+					INSERT INTO merged_mrs (username, project_id, merge_count, merged_at)
+					VALUES ($1, $2, $3, $4)
+				`, username, projectID, cumulative, date)
+				if err != nil {
+					return fmt.Errorf("failed to add row: %w", err)
+				}
+			}
+		}
+	}
+	return nil
 }
