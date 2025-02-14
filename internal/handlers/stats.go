@@ -34,19 +34,7 @@ func NewStatsHandler(store StatsStore, cfg *config.Config, client StatsClient) *
 }
 
 func (h *StatsHandler) handleStats(w http.ResponseWriter, _ *http.Request) {
-	today := time.Now().UTC()
-	endOfDay := time.Date(
-		time.Now().Year(),
-		today.Month(),
-		today.Day(),
-		23,
-		59,
-		59,
-		999999999,
-		today.Location(),
-	).UTC()
-
-	data, err := h.store.GetAggregatedDataForDate(h.cfg.ProjectNames, endOfDay)
+	data, err := h.store.GetAggregatedDataForDate(h.cfg.ProjectNames, endOfDay(time.Now()))
 	if err != nil {
 		http.Error(w, "Failed to get data", http.StatusInternalServerError)
 		return
@@ -70,18 +58,7 @@ func (h *StatsHandler) handleStatsByDate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	endOfDay := time.Date(
-		targetDate.Year(),
-		targetDate.Month(),
-		targetDate.Day(),
-		23,
-		59,
-		59,
-		999999999,
-		targetDate.Location(),
-	).UTC()
-
-	data, err := h.store.GetAggregatedDataForDate(h.cfg.ProjectNames, endOfDay)
+	data, err := h.store.GetAggregatedDataForDate(h.cfg.ProjectNames, endOfDay(targetDate))
 	if err != nil {
 		http.Error(w, "Failed to retrieve historical data", http.StatusInternalServerError)
 		return
@@ -92,4 +69,17 @@ func (h *StatsHandler) handleStatsByDate(w http.ResponseWriter, r *http.Request)
 	if err := h.tmpl.Execute(w, data); err != nil {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 	}
+}
+
+func endOfDay(date time.Time) time.Time {
+	return time.Date(
+		date.Year(),
+		date.Month(),
+		date.Day(),
+		23,
+		59,
+		59,
+		999999999,
+		date.Location(),
+	).UTC()
 }
