@@ -23,5 +23,13 @@ func TemplateExec(w http.ResponseWriter, t *template.Template, data any) error {
 }
 
 func TemplateStats() *template.Template {
-	return templateFrom(nil, "stats")
+	return templateFrom(template.FuncMap{"sum": mapSumFunc}, "stats")
+}
+
+func mapSumFunc(m map[string]int) int {
+	var sum int
+	for _, v := range m {
+		sum += v
+	}
+	return sum
 }

@@ -74,6 +74,7 @@ func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDat
 	defer rows.Close()
 
 	devTotals := make(map[string]int)
+	repoTotals := make(map[string]int)
 	projectsSet := make(map[string]struct{})
 	developerStats := make(map[string]map[string]int)
 
@@ -87,12 +88,18 @@ func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDat
 		}
 
 		projectName := extractProjectName(fullProjectName)
-		if _, exists := developerStats[username]; !exists {
-			developerStats[username] = make(map[string]int)
-		}
-		devTotals[username] = devTotal
 		projectsSet[projectName] = struct{}{}
-		developerStats[username][projectName] = count
+
+		if username == "TOTAL" {
+			// Repository total merged mrs row
+			repoTotals[projectName] = count
+		} else {
+			if _, exists := developerStats[username]; !exists {
+				developerStats[username] = make(map[string]int)
+			}
+			devTotals[username] = devTotal
+			developerStats[username][projectName] = count
+		}
 	}
 
 	if err = rows.Err(); err != nil {
@@ -105,6 +112,7 @@ func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDat
 		Developers: developerStats,
 		Projects:   projects,
 		DevTotals:  devTotals,
+		RepoTotals: repoTotals,
 	}, nil
 }
 
@@ -206,6 +214,13 @@ func getAggregatedDataSQL() string {
 				SUM(merge_count) as user_total_mrs
 			FROM latest_data
 			GROUP BY username
+		),
+		repo_totals AS (
+			SELECT
+				project_name,
+				SUM(merge_count) as repo_total_mrs
+			FROM latest_data
+			GROUP BY project_name
 		)
         SELECT 
             p.username,
@@ -214,5 +229,15 @@ func getAggregatedDataSQL() string {
             t.user_total_mrs
         FROM latest_data p
         JOIN user_totals t ON p.username = t.username
+
+		UNION ALL
+		
+		SELECT
+			'TOTAL' as username,
+			project_name,
+			repo_total_mrs as merge_count,
+			0 as user_total
+		FROM repo_totals
+		ORDER BY username, project_name;
     `
 }
