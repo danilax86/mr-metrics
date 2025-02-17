@@ -6,6 +6,8 @@ type AggregatedStats struct {
 	Developers map[string]map[string]int
 	Projects   []string
 	DateString string
+	// Total amount of merged requests per developer
+	DevTotals map[string]int
 }
 
 type ProjectMRCounts struct {

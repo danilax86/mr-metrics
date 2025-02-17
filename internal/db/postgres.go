@@ -67,38 +67,22 @@ func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, mrs
 }
 
 func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error) {
-	rows, err := p.db.Query(`
-        WITH latest_data AS (
-            SELECT DISTINCT ON (m.username, p.project_id)
-                m.username,
-                p.project_name,
-                m.merge_count
-            FROM merged_mrs m
-            JOIN projects p ON m.project_id = p.project_id
-            WHERE p.project_name = ANY($1)
-            AND m.merged_at <= $2
-            ORDER BY m.username, p.project_id, m.merged_at DESC
-        )
-        SELECT 
-            username,
-            project_name,
-            merge_count
-        FROM latest_data
-    `, pq.Array(projectNames), targetDate)
-
+	rows, err := p.db.Query(getAggregatedDataSQL(), pq.Array(projectNames), targetDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
-	developerStats := make(map[string]map[string]int)
+	devTotals := make(map[string]int)
 	projectsSet := make(map[string]struct{})
+	developerStats := make(map[string]map[string]int)
 
 	for rows.Next() {
-		var username, fullProjectName string
+		var devTotal int
 		var count int
+		var username, fullProjectName string
 
-		if err := rows.Scan(&username, &fullProjectName, &count); err != nil {
+		if err := rows.Scan(&username, &fullProjectName, &count, &devTotal); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 
@@ -106,8 +90,9 @@ func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDat
 		if _, exists := developerStats[username]; !exists {
 			developerStats[username] = make(map[string]int)
 		}
-		developerStats[username][projectName] = count
+		devTotals[username] = devTotal
 		projectsSet[projectName] = struct{}{}
+		developerStats[username][projectName] = count
 	}
 
 	if err = rows.Err(); err != nil {
@@ -119,6 +104,7 @@ func (p PostgresStore) GetAggregatedDataForDate(projectNames []string, targetDat
 	return &model.AggregatedStats{
 		Developers: developerStats,
 		Projects:   projects,
+		DevTotals:  devTotals,
 	}, nil
 }
 
@@ -199,4 +185,34 @@ func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]
 		}
 	}
 	return nil
+}
+
+func getAggregatedDataSQL() string {
+	return `
+		WITH latest_data AS (
+            SELECT DISTINCT ON (m.username, p.project_id)
+                m.username,
+                p.project_name,
+                m.merge_count
+            FROM merged_mrs m
+            JOIN projects p ON m.project_id = p.project_id
+            WHERE p.project_name = ANY($1)
+            AND m.merged_at <= $2
+            ORDER BY m.username, p.project_id, m.merged_at DESC
+        ),
+		user_totals AS (
+			SELECT
+				username,
+				SUM(merge_count) as user_total_mrs
+			FROM latest_data
+			GROUP BY username
+		)
+        SELECT 
+            p.username,
+            p.project_name,
+            p.merge_count,
+            t.user_total_mrs
+        FROM latest_data p
+        JOIN user_totals t ON p.username = t.username
+    `
 }
