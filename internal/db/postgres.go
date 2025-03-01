@@ -4,11 +4,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/lib/pq"
 	"mr-metrics/internal/model"
+	"path"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/golang-migrate/migrate/v4"
+
+	// Blank import is necessary to enable the migrate library to use the file source driver,
+	// which is used to load migration scripts from files.
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 const (
@@ -36,7 +44,31 @@ func NewPostgresStore(connStr string) (*PostgresStore, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	if err := runMigrations(db); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
 	return &PostgresStore{db: db}, nil
+}
+
+func runMigrations(db *sql.DB) error {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to create migration driver: %w", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://"+path.Join("migrations"),
+		"postgres", driver)
+	if err != nil {
+		return fmt.Errorf("failed to create migration instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
+	return nil
 }
 
 func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, mrs []model.MergeRequest) error {
