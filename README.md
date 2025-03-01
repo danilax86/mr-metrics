@@ -11,7 +11,6 @@ Logic:
 
 - [x] Make issuing GitLab requests via cron, not by "/" endpoint
 - [x] When requesting "/" endpoint, get data directly from database without making requests to GitLab
-- [ ] Write script for applying migrations
 - [x] Support of getting statistic up to provided date
 - [ ] Support of getting statistic's diff between provided dates
 - [ ] Topic support instead of providing project names
