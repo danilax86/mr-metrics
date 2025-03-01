@@ -19,6 +19,7 @@ WORKDIR /app
 
 COPY --from=builder /app/mr-metrics .
 COPY internal/web/templates ./web/templates
+COPY migrations ./migrations
 
 EXPOSE 8080
 ENTRYPOINT ["./mr-metrics"]
