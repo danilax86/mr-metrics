@@ -25,7 +25,7 @@ For contributors:
     - [x] Roadmap
 - [x] Add a license
     - [ ] License text at the top of each file perhaps?)
-- [ ] Add Dockerfile for local development
+- [x] Add Dockerfile for local development
 - [ ] Add Devcontainer support (we live in a modern era, c'mon)
 - [ ] Add labels for issues
 
