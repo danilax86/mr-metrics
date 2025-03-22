@@ -54,18 +54,20 @@ func (g *GitLabClient) GetMergedMRCounts(projectName string, since time.Time) ([
 		if err != nil {
 			return nil, 0, err
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
 			return nil, 0, fmt.Errorf("API returned %d", resp.StatusCode)
 		}
 
 		apiMRs, err := g.decodeMergeRequests(resp.Body)
 		if err != nil {
+			resp.Body.Close()
 			return nil, 0, err
 		}
 
 		if len(apiMRs) == 0 {
+			resp.Body.Close()
 			break
 		}
 
@@ -76,8 +78,10 @@ func (g *GitLabClient) GetMergedMRCounts(projectName string, since time.Time) ([
 		mrs = append(mrs, g.extractMergeRequests(apiMRs)...)
 
 		if !g.hasNextPage(resp.Header) {
+			resp.Body.Close()
 			break
 		}
+		resp.Body.Close()
 		page++
 	}
 
