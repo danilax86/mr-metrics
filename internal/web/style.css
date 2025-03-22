@@ -1,12 +1,30 @@
-#dev-th {
-    padding-left: 0;
-    text-align: left;
+*, body {
+    font-family: Menlo, Monospace, 'Courier New', monospace;
 }
 
-.project-th {
-    padding-right: 1.5em;
+table, td, th {
+    border-collapse: collapse;
 }
 
-.dev-td {
-    padding-right: 1.5em;
+th {
+    background-color: lightgray;
+    color: black;
+    padding: 5px;
+}
+
+td {
+    padding: 5px;
+    position: relative;
+}
+
+table tr td:first-child::after {
+    position: absolute;
+    top: -1px;
+    right: 0;
+    font-size: 10px;
+}
+
+table tr:last-child {
+    background-color: lightgray;
+    font-weight: bold;
 }

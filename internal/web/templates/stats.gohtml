@@ -6,15 +6,15 @@
     </h1>
     <table>
         <tr>
-            <th id="dev-th">Developer</th>
+            <th>Developer</th>
             {{range .Projects}}
-                <th class="project-th">{{.}}</th>
+                <th>{{.}}</th>
             {{end}}
             <th>TOTAL</th>
         </tr>
         {{range $dev, $counts := .Developers}}
             <tr>
-                <td class="dev-td">{{$dev}}</td>
+                <td>{{$dev}}</td>
                 {{range $project := $.Projects}}
                     <td>{{index $counts $project}}</td>
                 {{end}}
@@ -22,7 +22,7 @@
             </tr>
         {{end}}
         <tr>
-            <td><strong>TOTAL</strong></td>
+            <td>TOTAL</td>
             {{range $project := $.Projects}}
                 <td>{{index $.RepoTotals $project}}</td>
             {{end}}
