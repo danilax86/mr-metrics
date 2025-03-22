@@ -3,6 +3,7 @@ package updater
 import (
 	"context"
 	"log"
+	"mr-metrics/internal/consts"
 	"mr-metrics/internal/model"
 	"time"
 
@@ -11,10 +12,11 @@ import (
 
 type StatsUpdater interface {
 	UpdateProjectCache(projectID int, projectName string, counts []model.MergeRequest) error
+	GetLastUpdatedDate(projectName string) (time.Time, error)
 }
 
 type StatsClient interface {
-	GetMergedMRCounts(projectName string) ([]model.MergeRequest, int, error)
+	GetMergedMRCounts(projectName string, since time.Time) ([]model.MergeRequest, int, error)
 }
 
 type BackgroundUpdater struct {
@@ -51,7 +53,27 @@ func (u *BackgroundUpdater) Start(ctx context.Context) {
 
 func (u *BackgroundUpdater) updateAllProjects() {
 	for _, projectName := range u.cfg.ProjectNames {
-		counts, projectID, err := u.gitlab.GetMergedMRCounts(projectName)
+		lastUpdated, err := u.updater.GetLastUpdatedDate(projectName)
+		if err != nil {
+			log.Printf("Failed to fetch last updated date for project %s. Fetch all merged requests", projectName)
+
+			// If the last updated date is not found, fetch all data
+			counts, projectID, err := u.gitlab.GetMergedMRCounts(projectName, time.Time{}.UTC())
+			if err != nil {
+				log.Printf("Failed to fetch data for project %s: %v", projectName, err)
+				continue
+			}
+
+			if err := u.updater.UpdateProjectCache(projectID, projectName, counts); err != nil {
+				log.Printf("Failed to update cache for project %s: %v", projectName, err)
+			}
+			continue
+		}
+
+		// Add a delta (yesterday) to the last updated date to avoid losing requests
+		since := lastUpdated.Add(-1 * consts.OneDay)
+
+		counts, projectID, err := u.gitlab.GetMergedMRCounts(projectName, since)
 		if err != nil {
 			log.Printf("Failed to fetch data for project %s: %v", projectName, err)
 			continue
