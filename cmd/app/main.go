@@ -32,5 +32,5 @@ func main() {
 	u := updater.New(store, gitlabClient, cfg)
 	go u.Start(ctx)
 
-	log.Fatal(handlers.Start(store, cfg, gitlabClient))
+	log.Fatal(handlers.Start(store, cfg))
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/lib/pq"
+	"mr-metrics/internal/consts"
 	"mr-metrics/internal/model"
 	"path"
 	"sort"
@@ -23,8 +24,6 @@ const (
 	maxConns        = 25
 	maxConnLifetime = 5 * time.Minute
 )
-
-const oneDay = 24 * time.Hour
 
 type PostgresStore struct {
 	db *sql.DB
@@ -69,6 +68,19 @@ func runMigrations(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+func (p PostgresStore) GetLastUpdatedDate(projectName string) (time.Time, error) {
+	var lastUpdated time.Time
+	err := p.db.QueryRow(`
+        SELECT last_updated
+        FROM projects
+        WHERE project_name = $1
+    `, projectName).Scan(&lastUpdated)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return lastUpdated, nil
 }
 
 func (p PostgresStore) UpdateProjectCache(projectID int, projectName string, mrs []model.MergeRequest) error {
@@ -168,7 +180,7 @@ func sortedKeys(m map[string]struct{}) []string {
 func groupMRsByUserAndDate(mrs []model.MergeRequest) map[string]map[time.Time]int {
 	userDates := make(map[string]map[time.Time]int)
 	for _, mr := range mrs {
-		date := mr.MergedAt.UTC().Truncate(oneDay)
+		date := mr.MergedAt.UTC().Truncate(consts.OneDay)
 		if _, exists := userDates[mr.Username]; !exists {
 			userDates[mr.Username] = make(map[time.Time]int)
 		}
