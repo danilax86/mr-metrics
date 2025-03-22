@@ -14,22 +14,17 @@ type StatsStore interface {
 	GetAggregatedDataForDate(projectNames []string, targetDate time.Time) (*model.AggregatedStats, error)
 }
 
-type StatsClient interface {
-	GetMergedMRCounts(projectName string) ([]model.MergeRequest, int, error)
-}
 type StatsHandler struct {
-	store  StatsStore
-	client StatsClient
-	cfg    *config.Config
-	tmpl   *template.Template
+	store StatsStore
+	cfg   *config.Config
+	tmpl  *template.Template
 }
 
-func NewStatsHandler(store StatsStore, cfg *config.Config, client StatsClient) *StatsHandler {
+func NewStatsHandler(store StatsStore, cfg *config.Config) *StatsHandler {
 	return &StatsHandler{
-		store:  store,
-		cfg:    cfg,
-		client: client,
-		tmpl:   web.TemplateStats(),
+		store: store,
+		cfg:   cfg,
+		tmpl:  web.TemplateStats(),
 	}
 }
 
