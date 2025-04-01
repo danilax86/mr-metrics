@@ -28,3 +28,7 @@ table tr:last-child {
     background-color: lightgray;
     font-weight: bold;
 }
+
+table tr:not(:first-child) td:not(:first-child) {
+    text-align: right;
+}
