@@ -29,7 +29,7 @@ For contributors:
     - [ ] How to contribute
     - [x] Roadmap
 - [x] Add a license
-    - [ ] License text at the top of each file perhaps?)
+    - [x] License text at the top of each file perhaps?)
 - [x] Add Dockerfile for local development
 - [ ] Add Devcontainer support (we live in a modern era, c'mon)
 - [ ] Add labels for issues
