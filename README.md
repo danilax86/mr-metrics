@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Danila Gorelko <hello@danilax86.space>
+
+SPDX-License-Identifier: MIT
+-->
+
 [![PDD status](https://www.0pdd.com/svg?name=danilax86/mr-metrics)](https://www.0pdd.com/p?name=danilax86/mr-metrics)
 [![Hits-of-Code](https://hitsofcode.com/github/danilax86/mr-metrics?branch=main)](https://hitsofcode.com/github/danilax86/mr-metrics/view?branch=main)
 
@@ -23,7 +29,7 @@ For contributors:
     - [ ] How to contribute
     - [x] Roadmap
 - [x] Add a license
-    - [ ] License text at the top of each file perhaps?)
+    - [x] License text at the top of each file perhaps?)
 - [x] Add Dockerfile for local development
 - [ ] Add Devcontainer support (we live in a modern era, c'mon)
 - [ ] Add labels for issues

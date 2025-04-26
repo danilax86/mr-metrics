@@ -1,0 +1,17 @@
+version = 1
+
+[[annotations]]
+path = "internal/web/templates/*.gohtml"
+SPDX-FileCopyrightText = "2025 Danila Gorelko <hello@danilax86.space>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "go.mod",
+    "go.sum",
+    ".gitignore",
+    ".env.example",
+    ".golangci.yml"
+]
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "MIT"
