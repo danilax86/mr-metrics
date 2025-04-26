@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Danila Gorelko <hello@danilax86.space>
+#
+# SPDX-License-Identifier: MIT
+
 GOCMD = go
 GOBUILD = $(GOCMD) build
 GOTEST = $(GOCMD) test
@@ -24,6 +28,3 @@ clean:
 
 lint:
 	golangci-lint run
-
-help:
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Danila Gorelko <hello@danilax86.space>
+//
+// SPDX-License-Identifier: MIT
+
 package handlers
 
 import (
