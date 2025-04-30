@@ -203,7 +203,22 @@ func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]
 			return sortedDates[i].Before(sortedDates[j])
 		})
 
+		// Get the latest cumulative count before the earliest date in the current batch
 		cumulative := 0
+		if len(sortedDates) > 0 {
+			earliestDate := sortedDates[0]
+			err := tx.QueryRow(`
+				SELECT merge_count
+				FROM merged_mrs
+				WHERE username = $1 AND project_id = $2 AND merged_at < $3
+				ORDER BY merged_at DESC
+				LIMIT 1
+			`, username, projectID, earliestDate).Scan(&cumulative)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("failed to get previous cumulative count: %w", err)
+			}
+		}
+
 		for _, date := range sortedDates {
 			cumulative += dates[date]
 
@@ -279,7 +294,7 @@ func getAggregatedDataSQL() string {
         JOIN user_totals t ON p.username = t.username
 
 		UNION ALL
-		
+
 		SELECT
 			'TOTAL' as username,
 			project_name,
