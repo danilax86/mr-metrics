@@ -207,7 +207,7 @@ func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]
 
 // getSortedDates returns a slice of dates sorted in ascending order.
 func getSortedDates(dates map[time.Time]int) []time.Time {
-	var sortedDates []time.Time
+	sortedDates := make([]time.Time, 0, len(dates))
 	for date := range dates {
 		sortedDates = append(sortedDates, date)
 	}
