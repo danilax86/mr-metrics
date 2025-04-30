@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-//go:embed templates/*.gohtml
+//go:embed templates/*.gohtml style.css
 var fs embed.FS
 
 func templateFrom(funcMap template.FuncMap, filenames ...string) *template.Template {
@@ -36,4 +36,9 @@ func mapSumFunc(m map[string]int) int {
 		sum += v
 	}
 	return sum
+}
+
+// GetStyleCSS returns the embedded style.css file content.
+func GetStyleCSS() ([]byte, error) {
+	return fs.ReadFile("style.css")
 }

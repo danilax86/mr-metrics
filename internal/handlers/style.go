@@ -5,24 +5,22 @@
 package handlers
 
 import (
-	"io"
+	"mr-metrics/internal/web"
 	"net/http"
-	"os"
 )
 
 func handleStyle(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/css; charset=utf-8")
 
-	file, err := os.Open("./internal/web/style.css")
+	css, err := web.GetStyleCSS()
 	if err != nil {
-		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		http.Error(w, "Failed to read style.css", http.StatusInternalServerError)
 		return
 	}
-	defer file.Close()
 
-	_, err = io.Copy(w, file)
+	_, err = w.Write(css)
 	if err != nil {
-		http.Error(w, "Failed to copy file", http.StatusInternalServerError)
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
 }
