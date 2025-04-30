@@ -193,7 +193,7 @@ func groupMRsByUserAndDate(mrs []model.MergeRequest) map[string]map[time.Time]in
 	return userDates
 }
 
-// updateDailyCumulativeCounts updates the daily cumulative counts of merge requests for each user in a project
+// updateDailyCumulativeCounts updates the daily cumulative counts of merge requests for each user in a project.
 func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]int, projectID int) error {
 	for username, dates := range userDates {
 		sortedDates := getSortedDates(dates)
@@ -205,7 +205,7 @@ func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]
 	return nil
 }
 
-// getSortedDates returns a slice of dates sorted in ascending order
+// getSortedDates returns a slice of dates sorted in ascending order.
 func getSortedDates(dates map[time.Time]int) []time.Time {
 	var sortedDates []time.Time
 	for date := range dates {
@@ -217,9 +217,9 @@ func getSortedDates(dates map[time.Time]int) []time.Time {
 	return sortedDates
 }
 
-// updateUserCounts updates the cumulative counts for a specific user
+// updateUserCounts updates the cumulative counts for a specific user.
 func updateUserCounts(tx *sql.Tx, username string, projectID int, sortedDates []time.Time, dates map[time.Time]int) error {
-	// NOTE(d.gorelko): Get the latest cumulative count before the earliest date in the current batch
+	// NOTE(d.gorelko): Get the latest cumulative count before the earliest date in the current batch.
 	cumulative := 0
 	if len(sortedDates) > 0 {
 		earliestDate := sortedDates[0]
@@ -245,7 +245,7 @@ func updateUserCounts(tx *sql.Tx, username string, projectID int, sortedDates []
 	return nil
 }
 
-// updateOrInsertCount updates an existing row or inserts a new one for the given date
+// updateOrInsertCount updates an existing row or inserts a new one for the given date.
 func updateOrInsertCount(tx *sql.Tx, username string, projectID int, date time.Time, cumulative int) error {
 	var existingCount int
 	err := tx.QueryRow(`
@@ -265,7 +265,7 @@ func updateOrInsertCount(tx *sql.Tx, username string, projectID int, date time.T
 	return insertNewCount(tx, username, projectID, date, cumulative)
 }
 
-// updateExistingCount updates an existing row in the database
+// updateExistingCount updates an existing row in the database.
 func updateExistingCount(tx *sql.Tx, username string, projectID int, date time.Time, cumulative int) error {
 	_, err := tx.Exec(`
 		UPDATE merged_mrs
@@ -279,7 +279,7 @@ func updateExistingCount(tx *sql.Tx, username string, projectID int, date time.T
 	return nil
 }
 
-// insertNewCount inserts a new row into the database
+// insertNewCount inserts a new row into the database.
 func insertNewCount(tx *sql.Tx, username string, projectID int, date time.Time, cumulative int) error {
 	_, err := tx.Exec(`
 		INSERT INTO merged_mrs (username, project_id, merge_count, merged_at)
