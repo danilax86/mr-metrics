@@ -1,7 +1,6 @@
+version: "2"
 linters:
-  disable-all: true
-  # Enable specific linter
-  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  default: none
   enable:
     - asasalint
     - asciicheck
@@ -24,12 +23,10 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    #    - exhaustruct
     - fatcontext
     - forbidigo
     - forcetypeassert
     - funlen
-    #    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
@@ -41,15 +38,11 @@ linters:
     - gocyclo
     - godot
     - godox
-    - gofmt
-    #    - gofumpt
     - goheader
-    #    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - gosimple
     - gosmopolitan
     - govet
     - grouper
@@ -72,7 +65,6 @@ linters:
     - nestif
     - nilerr
     - nilnil
-    #    - nlreturn
     #    - noctx @todo #3 turn on noctx linter
     - nolintlint
     - nonamedreturns
@@ -91,10 +83,7 @@ linters:
     - spancheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
     - tagalign
-    #    - tagliatelle
-    - tenv
     - testableexamples
     - testifylint
     - testpackage
@@ -104,29 +93,27 @@ linters:
     - unparam
     - unused
     - usestdlibvars
-    #    - varnamelen
     - wastedassign
     - whitespace
     #    - wrapcheck @todo #2 turn on wrapcheck linter
-    #    - wsl
     - zerologlint
-  # Enable presets.
-  # https://golangci-lint.run/usage/linters
-  # Default: []
-  #  presets:
-  #    - bugs
-  #    - comment
-  #    - complexity
-  #    - error
-  #    - format
-  #    - import
-  #    - metalinter
-  #    - module
-  #    - performance
-  #    - sql
-  #    - style
-  #    - test
-  #    - unused
-  # Enable only fast linters from enabled linters set (first run won't be fast)
-  # Default: false
-  fast: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
