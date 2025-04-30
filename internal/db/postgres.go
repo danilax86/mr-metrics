@@ -193,52 +193,101 @@ func groupMRsByUserAndDate(mrs []model.MergeRequest) map[string]map[time.Time]in
 	return userDates
 }
 
+// updateDailyCumulativeCounts updates the daily cumulative counts of merge requests for each user in a project.
 func updateDailyCumulativeCounts(tx *sql.Tx, userDates map[string]map[time.Time]int, projectID int) error {
 	for username, dates := range userDates {
-		var sortedDates []time.Time
-		for date := range dates {
-			sortedDates = append(sortedDates, date)
+		sortedDates := getSortedDates(dates)
+
+		if err := updateUserCounts(tx, username, projectID, sortedDates, dates); err != nil {
+			return err
 		}
-		sort.Slice(sortedDates, func(i, j int) bool {
-			return sortedDates[i].Before(sortedDates[j])
-		})
+	}
+	return nil
+}
 
-		cumulative := 0
-		for _, date := range sortedDates {
-			cumulative += dates[date]
+// getSortedDates returns a slice of dates sorted in ascending order.
+func getSortedDates(dates map[time.Time]int) []time.Time {
+	sortedDates := make([]time.Time, 0, len(dates))
+	for date := range dates {
+		sortedDates = append(sortedDates, date)
+	}
+	sort.Slice(sortedDates, func(i, j int) bool {
+		return sortedDates[i].Before(sortedDates[j])
+	})
+	return sortedDates
+}
 
-			// Check if a row already exists for the given date
-			var existingCount int
-			err := tx.QueryRow(`
-				SELECT merge_count
-				FROM merged_mrs
-				WHERE username = $1 AND project_id = $2 AND merged_at = $3
-			`, username, projectID, date).Scan(&existingCount)
-			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return fmt.Errorf("failed to check existing row: %w", err)
-			}
-
-			// If a row exists, update the merge_count
-			if existingCount > 0 {
-				_, err = tx.Exec(`
-					UPDATE merged_mrs
-					SET merge_count = $1
-					WHERE username = $2 AND project_id = $3 AND merged_at = $4
-				`, cumulative, username, projectID, date)
-				if err != nil {
-					return fmt.Errorf("failed to update existing row: %w", err)
-				}
-			} else {
-				// If no row exists, insert a new one
-				_, err = tx.Exec(`
-					INSERT INTO merged_mrs (username, project_id, merge_count, merged_at)
-					VALUES ($1, $2, $3, $4)
-				`, username, projectID, cumulative, date)
-				if err != nil {
-					return fmt.Errorf("failed to add row: %w", err)
-				}
-			}
+// updateUserCounts updates the cumulative counts for a specific user.
+func updateUserCounts(tx *sql.Tx, username string, projectID int, sortedDates []time.Time, dates map[time.Time]int) error {
+	// NOTE(d.gorelko): Get the latest cumulative count before the earliest date in the current batch.
+	cumulative := 0
+	if len(sortedDates) > 0 {
+		earliestDate := sortedDates[0]
+		err := tx.QueryRow(`
+			SELECT merge_count
+			FROM merged_mrs
+			WHERE username = $1 AND project_id = $2 AND merged_at < $3
+			ORDER BY merged_at DESC
+			LIMIT 1
+		`, username, projectID, earliestDate).Scan(&cumulative)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("failed to get previous cumulative count: %w", err)
 		}
+	}
+
+	for _, date := range sortedDates {
+		cumulative += dates[date]
+
+		if err := updateOrInsertCount(tx, username, projectID, date, cumulative); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// updateOrInsertCount updates an existing row or inserts a new one for the given date.
+func updateOrInsertCount(tx *sql.Tx, username string, projectID int, date time.Time, cumulative int) error {
+	var existingCount int
+	err := tx.QueryRow(`
+		SELECT merge_count
+		FROM merged_mrs
+		WHERE username = $1 AND project_id = $2 AND merged_at = $3
+	`, username, projectID, date).Scan(&existingCount)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("failed to check existing row: %w", err)
+	}
+
+	if existingCount > 0 {
+		return updateExistingCount(tx, username, projectID, date, cumulative)
+	}
+
+	return insertNewCount(tx, username, projectID, date, cumulative)
+}
+
+// updateExistingCount updates an existing row in the database.
+func updateExistingCount(tx *sql.Tx, username string, projectID int, date time.Time, cumulative int) error {
+	_, err := tx.Exec(`
+		UPDATE merged_mrs
+		SET merge_count = $1
+		WHERE username = $2 AND project_id = $3 AND merged_at = $4
+	`, cumulative, username, projectID, date)
+
+	if err != nil {
+		return fmt.Errorf("failed to update existing row: %w", err)
+	}
+	return nil
+}
+
+// insertNewCount inserts a new row into the database.
+func insertNewCount(tx *sql.Tx, username string, projectID int, date time.Time, cumulative int) error {
+	_, err := tx.Exec(`
+		INSERT INTO merged_mrs (username, project_id, merge_count, merged_at)
+		VALUES ($1, $2, $3, $4)
+	`, username, projectID, cumulative, date)
+
+	if err != nil {
+		return fmt.Errorf("failed to add row: %w", err)
 	}
 	return nil
 }
@@ -279,7 +328,7 @@ func getAggregatedDataSQL() string {
         JOIN user_totals t ON p.username = t.username
 
 		UNION ALL
-		
+
 		SELECT
 			'TOTAL' as username,
 			project_name,
