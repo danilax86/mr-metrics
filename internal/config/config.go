@@ -5,6 +5,7 @@
 package config
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -40,7 +41,7 @@ func Load() (*Config, error) {
 		errors = append(errors, "DATABASE_URL is required")
 	}
 
-	gitlabHostURL := getEnv("GITLAB_HOST_URL", "https://gitlab.com")
+	gitlabHostURL := cmp.Or(os.Getenv("GITLAB_HOST_URL"), "https://gitlab.com")
 	if _, err := url.Parse(gitlabHostURL); err != nil {
 		errors = append(errors, fmt.Sprintf("invalid GITLAB_HOST_URL: %v", err))
 	}
@@ -50,28 +51,20 @@ func Load() (*Config, error) {
 		errors = append(errors, "GITLAB_PROJECT_NAMES is required")
 	}
 
-	cacheTTL := parseDuration(getEnv("CACHE_TTL", "1h"))
+	cacheTTL := parseDuration(cmp.Or(os.Getenv("CACHE_TTL"), "1h"))
 
 	if len(errors) > 0 {
 		return nil, fmt.Errorf("configuration errors:\n- %s", strings.Join(errors, "\n- "))
 	}
 
 	return &Config{
-		Port:          getEnv("PORT", "8080"),
+		Port:          cmp.Or(os.Getenv("PORT"), "8080"),
 		GitLabToken:   gitlabToken,
 		GitLabHostURL: gitlabHostURL,
 		ProjectNames:  projectNames,
 		DatabaseURL:   databaseURL,
 		CacheTTL:      cacheTTL,
 	}, nil
-}
-
-func getEnv(key string, defaultVal string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultVal
-	}
-	return value
 }
 
 func parseDuration(value string) time.Duration {
