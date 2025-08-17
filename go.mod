@@ -1,6 +1,6 @@
 module mr-metrics
 
-go 1.24.5
+go 1.25
 
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
