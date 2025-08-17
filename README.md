@@ -11,6 +11,8 @@ SPDX-License-Identifier: MIT
 
 A simple web application that shows a [developer × repository] table of merged MRs.
 
+![Demo table](demo.png)
+
 # Roadmap
 
 Logic:
@@ -32,7 +34,7 @@ For contributors:
     - [x] License text at the top of each file perhaps?)
 - [x] Add Dockerfile for local development
 - [ ] Add Devcontainer support (we live in a modern era, c'mon)
-- [ ] Add labels for issues
+- [x] Add labels for issues
 
 For code quality:
 
