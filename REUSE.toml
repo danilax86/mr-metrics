@@ -9,6 +9,7 @@ SPDX-License-Identifier = "MIT"
 path = [
     "go.mod",
     "go.sum",
+    "demo.png",
     ".gitignore",
     ".env.example",
     ".golangci.yml"
