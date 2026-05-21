@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Danila Gorelko <hello@danilax86.space>
+// SPDX-FileCopyrightText: 2026 Danila Gorelko <hello@danilax86.space>
 //
 // SPDX-License-Identifier: MIT
 
@@ -7,12 +7,13 @@ package config
 import (
 	"cmp"
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -70,7 +71,10 @@ func Load() (*Config, error) {
 func parseDuration(value string) time.Duration {
 	d, err := time.ParseDuration(value)
 	if err != nil {
-		log.Fatalf("Invalid duration format: %s", value)
+		log.Fatalf(
+			"Invalid duration format: %s",
+			strings.ReplaceAll(strings.ReplaceAll(value, "\n", "\\n"), "\r", "\\r"),
+		)
 	}
 	return d
 }
