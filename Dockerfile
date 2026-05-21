@@ -1,9 +1,9 @@
-# SPDX-FileCopyrightText: 2025 Danila Gorelko <hello@danilax86.space>
+# SPDX-FileCopyrightText: 2026 Danila Gorelko <hello@danilax86.space>
 #
 # SPDX-License-Identifier: MIT
 
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 

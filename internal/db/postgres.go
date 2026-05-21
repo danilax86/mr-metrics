@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Danila Gorelko <hello@danilax86.space>
+// SPDX-FileCopyrightText: 2026 Danila Gorelko <hello@danilax86.space>
 //
 // SPDX-License-Identifier: MIT
 
@@ -8,14 +8,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	"github.com/lib/pq"
 	"mr-metrics/internal/consts"
 	"mr-metrics/internal/model"
 	"path"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/lib/pq"
 
 	"github.com/golang-migrate/migrate/v4"
 
