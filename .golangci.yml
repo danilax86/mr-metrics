@@ -18,7 +18,7 @@ linters:
     - dupword
     - durationcheck
     #    - err113   @todo #8 turn on err113 linter
-    #    - errcheck @todo #7 turn on errcheck linter
+    - errcheck
     - errchkjson
     - errname
     - errorlint
